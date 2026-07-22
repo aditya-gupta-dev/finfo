@@ -1,21 +1,39 @@
+
 pub struct FileInfo {
     absolute_path: String,
+    entity_type: Type,
+    readonly: bool, 
     size: u64,
 }
 
 pub fn run(files: &Vec<String>) -> Result<(), Box<dyn std::error::Error>> {
+    let args_len = files.len(); 
+
     let files: Vec<&String> = files
         .iter()
         .filter(|file| file.file_exists().expect("failed to check file existence"))
         .collect();
 
+    files.iter().for_each(|file| {
+        if let Ok(info) = get_file_info(file) {
+            println!("arg: {}", file);
+            
+            match info.entity_type {
+                Type::File => println!("\ttype: file"),
+                Type::Directory => println!("\ttype: directory"),
+                Type::Symlink => println!("\ttype: symlink"),
+            }
 
-    files.iter().for_each(|file| { 
-        if let Ok(info) = get_file_info(file) { 
-            println!("absolute_path: {}", info.absolute_path);
-            println!("size: {}", format_size(info.size));
+            println!("\tabsolute_path: {}", info.absolute_path);
+            println!("\treadonly: {}", info.readonly);
+            println!("\tsize: {}\n", format_size(info.size));
         }
     });
+
+    let not_found_files = args_len - files.len(); 
+    if not_found_files > 0 {
+        println!("{} files were not found.", not_found_files);
+    }
 
     Ok(())
 }
@@ -34,7 +52,12 @@ pub fn get_file_info(file: &String) -> Result<FileInfo, Box<dyn std::error::Erro
 
     let file_info = FileInfo {
         size: metadata.len(),
-        absolute_path: std::fs::canonicalize(file).unwrap().to_string_lossy().into_owned(),
+        entity_type: get_file_type(&metadata),
+        readonly: metadata.permissions().readonly(), 
+        absolute_path: std::fs::canonicalize(file)
+            .unwrap()
+            .to_string_lossy()
+            .into_owned(),
     };
 
     Ok(file_info)
@@ -79,6 +102,22 @@ fn format_size(bytes: u64) -> String {
         format!("{} {}", bytes, UNITS[unit])
     } else {
         format!("{:.2} {}", size, UNITS[unit])
+    }
+}
+
+enum Type {
+    File,
+    Directory,
+    Symlink,
+}
+
+fn get_file_type(metadata: &std::fs::Metadata) -> Type {
+    if metadata.is_dir() {
+        Type::Directory
+    } else if metadata.is_file() {
+        Type::File
+    } else {
+        Type::Symlink
     }
 }
 
