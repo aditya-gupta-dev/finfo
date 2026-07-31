@@ -5,3 +5,28 @@ version = 4
 [[package]]
 name = "finfo"
 version = "0.1.0"
+dependencies = [
+ "sysinfolinux",
+]
+
+[[package]]
+name = "libc"
+version = "0.2.189"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3eaf3ede3fee6db1a4c2ee091bf8a8b4dccdc6d17f656fb07896ee72867612f2"
+
+[[package]]
+name = "memchr"
+version = "2.8.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cf8baf1c55e62ffcace7a9f06f4bd9cd3f0c4beb022d3b367256b91b87513d98"
+
+[[package]]
+name = "sysinfolinux"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "fae13e0869055f14dcfcaf3eb09f044d2ab2d4e7ccbea1e23670059040342b33"
+dependencies = [
+ "libc",
+ "memchr",
+]
