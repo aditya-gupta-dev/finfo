@@ -1,13 +1,12 @@
-
 pub struct FileInfo {
     absolute_path: String,
     entity_type: Type,
-    readonly: bool, 
+    readonly: bool,
     size: u64,
 }
 
 pub fn run(files: &Vec<String>) -> Result<(), Box<dyn std::error::Error>> {
-    let args_len = files.len(); 
+    let args_len = files.len();
 
     let files: Vec<&String> = files
         .iter()
@@ -17,7 +16,7 @@ pub fn run(files: &Vec<String>) -> Result<(), Box<dyn std::error::Error>> {
     files.iter().for_each(|file| {
         if let Ok(info) = get_file_info(file) {
             println!("arg: {}", file);
-            
+
             match info.entity_type {
                 Type::File => println!("\ttype: file"),
                 Type::Directory => println!("\ttype: directory"),
@@ -30,7 +29,7 @@ pub fn run(files: &Vec<String>) -> Result<(), Box<dyn std::error::Error>> {
         }
     });
 
-    let not_found_files = args_len - files.len(); 
+    let not_found_files = args_len - files.len();
     if not_found_files > 0 {
         println!("{} files were not found.", not_found_files);
     }
@@ -39,21 +38,12 @@ pub fn run(files: &Vec<String>) -> Result<(), Box<dyn std::error::Error>> {
 }
 
 pub fn get_file_info(file: &String) -> Result<FileInfo, Box<dyn std::error::Error>> {
-    let metadata: std::fs::Metadata;
-
-    match std::fs::metadata(file) {
-        Ok(data) => {
-            metadata = data;
-        }
-        Err(e) => {
-            return Err(Box::new(e));
-        }
-    }
+    let metadata: std::fs::Metadata = std::fs::metadata(file)?;
 
     let file_info = FileInfo {
         size: metadata.len(),
         entity_type: get_file_type(&metadata),
-        readonly: metadata.permissions().readonly(), 
+        readonly: metadata.permissions().readonly(),
         absolute_path: std::fs::canonicalize(file)
             .unwrap()
             .to_string_lossy()
@@ -73,20 +63,11 @@ impl Exists for String {
             return Ok(false);
         }
 
-        let mut is_exists = false;
-
-        match std::fs::exists(self) {
-            Ok(true) => is_exists = true,
-            Ok(_) => {}
-            Err(err) => {
-                return Err(Box::new(err));
-            }
-        }
+        let is_exists = std::fs::exists(self)?; 
 
         return Ok(is_exists);
     }
 }
-
 
 fn format_size(bytes: u64) -> String {
     const UNITS: [&str; 5] = ["B", "KB", "MB", "GB", "TB"];
@@ -106,7 +87,6 @@ fn format_size(bytes: u64) -> String {
     }
 }
 
-
 enum Type {
     File,
     Directory,
@@ -122,4 +102,3 @@ fn get_file_type(metadata: &std::fs::Metadata) -> Type {
         Type::Symlink
     }
 }
-
