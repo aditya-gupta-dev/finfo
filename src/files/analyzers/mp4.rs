@@ -48,6 +48,10 @@ impl FileAnalyzer for MP4Analyzer {
             details.add(key, value);
         }
 
+        for (key, value) in metadata.video() {
+            details.add(key, value);
+        }
+
         return Ok(details);
     }
 
