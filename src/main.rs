@@ -1,27 +1,54 @@
-fn main() {
-    let args: Vec<String> = std::env::args().collect();
+use std::process::ExitCode;
 
-    if args.len() <= 1 {
-        return;
+const HELP: &str = "finfo - Detailed file information
+
+Usage: finfo [OPTIONS] <PATH>...
+
+Options:
+  -h, --help  Show this help
+  --          Treat all remaining arguments as paths
+
+Examples:
+  finfo Cargo.toml /usr/bin/env src
+  finfo -- -filename.txt
+
+Author:     https://github.com/aditya-gupta-dev
+Repository: https://github.com/aditya-gupta-dev/finfo";
+
+fn main() -> ExitCode {
+    let mut args = std::env::args_os().skip(1).peekable();
+    if args.peek().is_none() {
+        println!("{HELP}");
+        return ExitCode::SUCCESS;
     }
 
-    let search_type = &args[1];
-
-    if search_type.eq("--pids") {
-        let pids: Vec<String> = std::env::args().skip(2).collect(); 
-        if let Err(err) = finfo::pids::run(&pids) { 
-            eprintln!("{}", err); 
+    let mut files = Vec::new();
+    let mut paths_only = false;
+    for arg in args {
+        if !paths_only && arg == "--" {
+            paths_only = true;
+        } else if !paths_only && (arg == "-h" || arg == "--help") {
+            println!("{HELP}");
+            return ExitCode::SUCCESS;
+        } else if !paths_only && arg.as_encoded_bytes().starts_with(b"-") {
+            eprintln!(
+                "Unknown option: {}\nUse 'finfo --help' for usage.",
+                arg.to_string_lossy()
+            );
+            return ExitCode::FAILURE;
+        } else {
+            files.push(arg);
         }
-    } else if search_type.eq("--files") {
-        let files: Vec<String> = std::env::args().skip(2).collect();
-        if let Err(err) = finfo::files::run(&files) {
-            eprintln!("{}", err);
-        }
-    } else {
-        println!("unknown option provided.");
     }
-
-    // if let Err(err) = finfo::run(&files) {
-    //    println!("{}", err);
-    // }
+    if files.is_empty() {
+        eprintln!("No paths provided.\nUse 'finfo --help' for usage.");
+        return ExitCode::FAILURE;
+    }
+    match finfo::files::run(&files) {
+        Ok(()) => ExitCode::SUCCESS,
+        Err(err) => {
+            eprintln!("{err}");
+            ExitCode::FAILURE
+        }
+    }
 }
